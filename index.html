@@ -1,17 +1,107 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Mensagem Especial</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Álbum da Yasmin 💖</title>
+
+<style>
+body{font-family:Arial;background:#fad0c4;text-align:center;margin:0}
+.foto{background:white;margin:15px auto;padding:10px;width:300px;border-radius:10px}
+img{width:100%;border-radius:10px}
+textarea{width:90%}
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <button id="botao">Aperte aqui</button>
-        <p id="mensagem"></p>
-    </div>
+<h1>Álbum da Yasmin 📸💖</h1>
 
-    <script src="script.js"></script>
+<div id="login">
+    <input id="email" placeholder="Email"><br><br>
+    <input id="senha" type="password" placeholder="Senha"><br><br>
+    <button onclick="login()">Entrar (Yasmin)</button>
+</div>
+
+<div id="postar" style="display:none;">
+    <input type="file" id="foto"><br><br>
+    <textarea id="desc" placeholder="Descrição"></textarea><br>
+    <button onclick="enviar()">Postar Foto</button>
+    <hr>
+</div>
+
+<div id="galeria"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, addDoc, collection, onSnapshot, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyD-sZuEWfcj8sRj9deQOCpNNUjCDyGHoHI",
+    authDomain: "album-yasmin.firebaseapp.com",
+    projectId: "album-yasmin",
+    storageBucket: "album-yasmin.firebasestorage.app",
+    messagingSenderId: "689023295825",
+    appId: "1:689023295825:web:c0989660f596542eadb370",
+    measurementId: "G-32BCJ6FT3N"
+  };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
+const storage = getStorage();
+
+window.login = function(){
+    const email = email.value;
+    const senha = senha.value;
+
+    signInWithEmailAndPassword(auth, email, senha)
+    .then(()=>{
+        postar.style.display='block';
+        login.style.display='none';
+    });
+}
+
+window.enviar = async function(){
+    const file = foto.files[0];
+    const desc = desc.value;
+
+    const storageRef = ref(storage, 'fotos/'+file.name);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    await addDoc(collection(db, "fotos"), {
+        url: url,
+        descricao: desc,
+        comentarios: []
+    });
+}
+
+onSnapshot(collection(db,"fotos"), (snapshot)=>{
+    galeria.innerHTML="";
+    snapshot.forEach(docu=>{
+        const d = docu.data();
+        const div = document.createElement('div');
+        div.className="foto";
+        div.innerHTML=`
+            <img src="${d.url}">
+            <p>${d.descricao}</p>
+            <textarea placeholder="Comentar"></textarea>
+            <button onclick="comentar('${docu.id}', this)">Comentar</button>
+            <div>${d.comentarios.map(c=>"<p>💬 "+c+"</p>").join("")}</div>
+        `;
+        galeria.appendChild(div);
+    });
+});
+
+window.comentar = async function(id, el){
+    const texto = el.previousElementSibling.value;
+    const docRef = doc(db,"fotos",id);
+    await updateDoc(docRef,{
+        comentarios: arrayUnion(texto)
+    });
+}
+</script>
+
 </body>
 </html>
