@@ -9,6 +9,7 @@ body{font-family:Arial;background:#fad0c4;text-align:center;margin:0}
 .foto{background:white;margin:15px auto;padding:10px;width:300px;border-radius:10px}
 img{width:100%;border-radius:10px}
 textarea{width:90%}
+button{margin-top:8px}
 </style>
 </head>
 <body>
@@ -18,13 +19,13 @@ textarea{width:90%}
 <div id="login">
     <input id="email" placeholder="Email"><br><br>
     <input id="senha" type="password" placeholder="Senha"><br><br>
-    <button onclick="login()">Entrar (Yasmin)</button>
+    <button id="btnLogin">Entrar (Yasmin)</button>
 </div>
 
 <div id="postar" style="display:none;">
     <input type="file" id="foto"><br><br>
     <textarea id="desc" placeholder="Descrição"></textarea><br>
-    <button onclick="enviar()">Postar Foto</button>
+    <button id="btnPostar">Postar Foto</button>
     <hr>
 </div>
 
@@ -42,44 +43,33 @@ const firebaseConfig = {
     projectId: "album-yasmin",
     storageBucket: "album-yasmin.firebasestorage.app",
     messagingSenderId: "689023295825",
-    appId: "1:689023295825:web:c0989660f596542eadb370",
-    measurementId: "G-32BCJ6FT3N"
-  };
+    appId: "1:689023295825:web:c0989660f596542eadb370"
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
 const storage = getStorage();
 
-window.login = function(){
-    const emailDigitado = document.getElementById('email').value;
-    const senhaDigitada = document.getElementById('senha').value;
+document.getElementById("btnLogin").addEventListener("click", async () => {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
 
-    signInWithEmailAndPassword(auth, emailDigitado, senhaDigitada)
-    .then(()=>{
+    try {
+        await signInWithEmailAndPassword(auth, email, senha);
         document.getElementById('postar').style.display='block';
         document.getElementById('login').style.display='none';
-        alert("Login feito com sucesso!");
-    })
-    .catch((erro)=>{
-        alert("Erro no login: " + erro.message);
-    });
-}
+        alert("Login feito!");
+    } catch(e){
+        alert(e.message);
+    }
+});
 
-
-    signInWithEmailAndPassword(auth, email, senha)
-    .then(()=>{
-        postar.style.display='block';
-        login.style.display='none';
-    });
-}
-
-window.enviar = async function(){
+document.getElementById("btnPostar").addEventListener("click", async () => {
     const file = document.getElementById('foto').files[0];
     const desc = document.getElementById('desc').value;
 
-
-    const storageRef = ref(storage, 'fotos/'+file.name);
+    const storageRef = ref(storage, 'fotos/'+Date.now()+file.name);
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
 
@@ -88,7 +78,9 @@ window.enviar = async function(){
         descricao: desc,
         comentarios: []
     });
-}
+});
+
+const galeria = document.getElementById('galeria');
 
 onSnapshot(collection(db,"fotos"), (snapshot)=>{
     galeria.innerHTML="";
@@ -100,22 +92,20 @@ onSnapshot(collection(db,"fotos"), (snapshot)=>{
             <img src="${d.url}">
             <p>${d.descricao}</p>
             <textarea placeholder="Comentar"></textarea>
-            <button onclick="comentar('${docu.id}', this)">Comentar</button>
+            <button>Comentar</button>
             <div>${d.comentarios.map(c=>"<p>💬 "+c+"</p>").join("")}</div>
         `;
+        div.querySelector("button").onclick = async function(){
+            const texto = div.querySelector("textarea").value;
+            const docRef = doc(db,"fotos",docu.id);
+            await updateDoc(docRef,{
+                comentarios: arrayUnion(texto)
+            });
+        };
         galeria.appendChild(div);
     });
 });
-
-window.comentar = async function(id, el){
-    const texto = el.previousElementSibling.value;
-    const docRef = doc(db,"fotos",id);
-    await updateDoc(docRef,{
-        comentarios: arrayUnion(texto)
-    });
-}
 </script>
 
 </body>
 </html>
-
