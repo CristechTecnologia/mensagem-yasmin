@@ -52,8 +52,20 @@ const db = getFirestore();
 const storage = getStorage();
 
 window.login = function(){
-    const email = email.value;
-    const senha = senha.value;
+    const emailDigitado = document.getElementById('email').value;
+    const senhaDigitada = document.getElementById('senha').value;
+
+    signInWithEmailAndPassword(auth, emailDigitado, senhaDigitada)
+    .then(()=>{
+        document.getElementById('postar').style.display='block';
+        document.getElementById('login').style.display='none';
+        alert("Login feito com sucesso!");
+    })
+    .catch((erro)=>{
+        alert("Erro no login: " + erro.message);
+    });
+}
+
 
     signInWithEmailAndPassword(auth, email, senha)
     .then(()=>{
@@ -63,8 +75,9 @@ window.login = function(){
 }
 
 window.enviar = async function(){
-    const file = foto.files[0];
-    const desc = desc.value;
+    const file = document.getElementById('foto').files[0];
+    const desc = document.getElementById('desc').value;
+
 
     const storageRef = ref(storage, 'fotos/'+file.name);
     await uploadBytes(storageRef, file);
@@ -105,3 +118,4 @@ window.comentar = async function(id, el){
 
 </body>
 </html>
+
